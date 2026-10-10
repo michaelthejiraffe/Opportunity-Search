@@ -1,0 +1,537 @@
+{
+  "name": "Luma Event Curator to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Main Workflow\n",
+        "height": 1232,
+        "width": 2480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -1600
+      ],
+      "id": "ceb0856c-392b-4395-811d-626d3ffce7d7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Configuration \n\n1) Setup the apify node using the local regional coordinates and configure the default number of events to be pulled per request\n2) Set up the credentials for telegram, groq AI (or whichever model of your choosing) \n3) Create a data table with the headers (eventID, eventName, eventDate)\n4) Setup the telegram Chat ID\n",
+        "height": 288,
+        "width": 576,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1312,
+        -1600
+      ],
+      "id": "7bf0a8ea-6217-4649-90cd-1cfd91546b8b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "LTptGJxGJMC7X8Nw",
+          "mode": "list",
+          "cachedResultName": "luma event database",
+          "cachedResultUrl": "/projects/QyyH2JPr4o2Vsh62/datatables/LTptGJxGJMC7X8Nw"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "eventName": "={{ $json.name }}",
+            "eventID": "={{ $json.eventId }}",
+            "eventDate": "={{ $json.endAt.slice(0,10)}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "eventName",
+              "displayName": "eventName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "eventID",
+              "displayName": "eventID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "eventDate",
+              "displayName": "eventDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        -1216
+      ],
+      "id": "5ba3c337-292c-47e8-9ab6-5100ea1142a9",
+      "name": "Updating Event"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "value": "JFxrdGYYPZYL1Lree",
+          "mode": "list",
+          "cachedResultName": "Luma Event Scraper (hypebridge/luma-com-event-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/JFxrdGYYPZYL1Lree/input"
+        },
+        "customBody": "{\n  \"latitude\": 1.29687,\n  \"longitude\": 103.83464,\n  \"maxEvents\": 5,\n  \"scrapeEventDetails\": true,\n  \"startUrls\": [\n    {\n      \"url\": \"https://luma.com/singapore\"\n    }\n  ]\n}",
+        "maxTotalChargeUsd": 0.2
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -1120
+      ],
+      "id": "f5f077b0-0023-48b6-84f5-abb6dbd1199b",
+      "name": "Running Luma Apify Scraper",
+      "credentials": {
+        "apifyApi": {
+          "id": "8ivTJyUuFJgssUy5",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "LTptGJxGJMC7X8Nw",
+          "mode": "list",
+          "cachedResultName": "luma event database",
+          "cachedResultUrl": "/projects/QyyH2JPr4o2Vsh62/datatables/LTptGJxGJMC7X8Nw"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventID",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -1120
+      ],
+      "id": "dd7576ad-1998-44d9-9aea-1f77b814fd59",
+      "name": "Prevent Duplicate"
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ 5 }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        464,
+        -1024
+      ],
+      "id": "9548530c-7ad9-4256-aa43-422131b82703",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"check\" : \"Yes\",\n  \"Shortened_description\" : \"The event is a hackathon focused on creating free, open software for good. The event is sponsored by xxx and xxx, the event has great potential for networking due to xxx keynote speakers...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        -672
+      ],
+      "id": "110e1866-44bd-433a-b1cd-0a70b465561c",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.8-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -672
+      ],
+      "id": "91c877de-863b-4275-813f-a3394e5bfb57",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "hS8UrmKvPEzIfgLu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        816,
+        -672
+      ],
+      "id": "19a1eb0b-5219-4819-bbb3-74c2dbe53296",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "hS8UrmKvPEzIfgLu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        -1024
+      ],
+      "id": "8b1f0152-c743-4aca-93b2-f93e02e144bd",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "757684f5-bca0-427e-aaba-f47ef16e7a97",
+              "leftValue": "={{ $json.output.check }}",
+              "rightValue": "Yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1296,
+        -1024
+      ],
+      "id": "165fb6df-8405-4bcc-906c-9dd1637546d9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "LTptGJxGJMC7X8Nw",
+          "mode": "list",
+          "cachedResultName": "luma event database",
+          "cachedResultUrl": "/projects/QyyH2JPr4o2Vsh62/datatables/LTptGJxGJMC7X8Nw"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventDate",
+              "keyValue": "={{ String($today.format('yyyy-MM-dd')).trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -864
+      ],
+      "id": "3411a859-9106-4348-b1ac-4ec9d4583d1e",
+      "name": "Delete row(s)"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        -864
+      ],
+      "id": "72a2e836-fa3f-4c45-ac5d-3be5fa4bdefd",
+      "name": "Scheduled Deletion of Events"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 23
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -1120
+      ],
+      "id": "5534ea4d-b88d-425e-a603-852950dd4484",
+      "name": "Schedule Workflow"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003664052567",
+        "text": "=\"{{ $json.name }}\"\n\nStarts On: {{ $json.startAt.slice(0,10) }}\nEnds On: {{ $json.endAt.slice(0,10) }}\n\n{{ $json.output.Shortened_description }}\n\n{{ $json.eventUrl }}",
+        "additionalFields": {
+          "message_thread_id": 548
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        -1152
+      ],
+      "id": "7bd253ee-13a7-45c7-b78d-63c9150c1245",
+      "name": "Send a text message",
+      "webhookId": "1724e179-14e5-4b43-a718-a3b4d937af3f",
+      "credentials": {
+        "telegramApi": {
+          "id": "bJMtlyVZ5sviT75J",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please analyse the description of this event and determine if it related to these event categories: {Hackathons, Tech meetups, Tech sharing, Trading Competitions, startup pitches, financial and crypto events}. Next,add a shortened description of the event with a focus on the details and activities the event will contain and the potential networking/building opportunities\n\nIf the event is related to these categories, output \"Yes\", if not output \"No\" . These are the only 2 ACCEPTABLE outputs, do not output anything else \n\nThe Name of the event is:  {{ $json.name }}\nThe description of this event is:\n{{ $json.description }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        720,
+        -896
+      ],
+      "id": "b41e8ce5-3c6c-4f49-adbd-e0d3da6ea36f",
+      "name": "Filtering Out Events + Summarising Description"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Running Luma Apify Scraper": {
+      "main": [
+        [
+          {
+            "node": "Prevent Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Updating Event": {
+      "main": [
+        []
+      ]
+    },
+    "Prevent Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Updating Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Filtering Out Events + Summarising Description",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Filtering Out Events + Summarising Description",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Filtering Out Events + Summarising Description",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Filtering Out Events + Summarising Description",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scheduled Deletion of Events": {
+      "main": [
+        [
+          {
+            "node": "Delete row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Workflow": {
+      "main": [
+        [
+          {
+            "node": "Running Luma Apify Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "Filtering Out Events + Summarising Description": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "40ade746-937e-47dd-a253-668178177130",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00f3e1a45c5b5685a4824f1a3edbafe460ef0cdf77b561a9c1e977708ef23774"
+  },
+  "nodeGroups": [],
+  "id": "eV1OPGPb4BefBDJA",
+  "tags": []
+}
